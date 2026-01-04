@@ -122,9 +122,10 @@ app.post("/usage", async (req: Request<{}, {}, UsageBody>, res: Response) => {
   const meterEvent = await stripe.billing.meterEvents.create(
     {
       event_name: METER_EVENT_NAME,
+      timestamp: Math.floor(Date.now() / 1000),
       payload: {
         stripe_customer_id: record.customerId,
-        value,
+        value: String(value),
         user_id: userId,
       },
     },
@@ -132,8 +133,8 @@ app.post("/usage", async (req: Request<{}, {}, UsageBody>, res: Response) => {
   );
 
   return res.json({
-    meterEventId: meterEvent.id,
     idempotencyKey,
+    requestId: meterEvent.lastResponse?.requestId ?? null,
   });
 });
 

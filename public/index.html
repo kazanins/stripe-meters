@@ -234,6 +234,15 @@
         cursor: pointer;
       }
 
+      .btn.cta {
+        font-size: 13px;
+        padding: 12px 22px;
+        border: 2px solid var(--accent-2);
+        background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(99, 91, 255, 0.15));
+        box-shadow: var(--glow);
+        letter-spacing: 0.12em;
+      }
+
       .btn.primary {
         background: var(--accent);
         border-color: transparent;
@@ -293,6 +302,12 @@
         margin-top: 18px;
         font-weight: 600;
         font-size: 16px;
+      }
+
+      .invoice-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 16px;
       }
 
       .badge {
@@ -417,11 +432,14 @@
             </thead>
             <tbody id="invoiceLines"></tbody>
           </table>
-          <div class="invoice-total">
-            <span>Total</span>
-            <span id="invoiceTotal">--</span>
-          </div>
-        </section>
+        <div class="invoice-total">
+          <span>Total</span>
+          <span id="invoiceTotal">--</span>
+        </div>
+        <div class="invoice-actions">
+          <button class="btn cta" type="button" disabled>Pay with stablecoins</button>
+        </div>
+      </section>
       </div>
     </div>
 

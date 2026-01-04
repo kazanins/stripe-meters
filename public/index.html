@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stripe Metered Billing Demo</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap");
+
+      :root {
+        --bg: #f6f9fc;
+        --ink: #0a2540;
+        --muted: #5f6b7a;
+        --accent: #635bff;
+        --accent-2: #00d4ff;
+        --paper: #ffffff;
+        --border: #e6ebf1;
+        --shadow: 0 14px 40px rgba(10, 37, 64, 0.12);
+        --glow: 0 0 0 1px rgba(99, 91, 255, 0.15), 0 20px 60px rgba(99, 91, 255, 0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 10% 10%, rgba(0, 212, 255, 0.18), transparent 45%),
+          radial-gradient(circle at 85% 20%, rgba(99, 91, 255, 0.16), transparent 45%),
+          var(--bg);
+        padding: 40px;
+      }
+
+      .app {
+        width: 75vw;
+        max-width: 1300px;
+        margin: 0 auto;
+      }
+
+      .header {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+
+      .title {
+        font-size: 26px;
+        letter-spacing: 0.01em;
+        margin: 0 0 6px;
+      }
+
+      .subtitle {
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        box-shadow: var(--glow);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+        gap: 24px;
+      }
+
+      .panel {
+        background: var(--paper);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 22px 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .panel h2 {
+        margin: 0 0 12px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--muted);
+      }
+
+      .events {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 70vh;
+        overflow: auto;
+        padding-right: 6px;
+      }
+
+      .usage-summary {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .summary-card {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px 14px;
+        background: #f8fbff;
+      }
+
+      .summary-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--muted);
+      }
+
+      .summary-value {
+        font-size: 26px;
+        font-weight: 600;
+        margin-top: 6px;
+      }
+
+      .chart {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 14px 16px 10px;
+        background: #ffffff;
+        margin-bottom: 14px;
+      }
+
+      .chart-title {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--muted);
+        margin: 0 0 10px;
+      }
+
+      .chart-area {
+        width: 100%;
+        height: 170px;
+        position: relative;
+      }
+
+      .chart-svg {
+        position: absolute;
+        inset: 0;
+      }
+
+      .chart-axis {
+        display: flex;
+        justify-content: space-between;
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 6px;
+      }
+
+      .y-axis {
+        position: absolute;
+        left: 6px;
+        top: 6px;
+        bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        color: var(--muted);
+        font-size: 11px;
+        pointer-events: none;
+      }
+
+      .y-axis span {
+        transform: translateY(6px);
+      }
+
+      .latest-event {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        background: #f6f8ff;
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        font-size: 13px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+      }
+
+      .latest-event.pulse {
+        animation: pulse 0.6s ease-out;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: translateY(6px);
+          opacity: 0;
+        }
+        100% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        margin: 8px 0 14px;
+      }
+
+      .btn {
+        border: 1px solid var(--border);
+        background: #f6f8ff;
+        color: var(--ink);
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 8px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+      }
+
+      .btn.primary {
+        background: var(--accent);
+        border-color: transparent;
+        color: #fff;
+        box-shadow: var(--glow);
+      }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .event {
+        border-left: 3px solid var(--accent);
+        padding: 10px 12px;
+        background: #f6f8ff;
+        border-radius: 12px;
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 16px;
+      }
+
+      .invoice-title {
+        font-size: 20px;
+        margin: 0;
+      }
+
+      .invoice-meta {
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      .invoice-table th,
+      .invoice-table td {
+        text-align: left;
+        padding: 10px 4px;
+        border-bottom: 1px dashed #d5dceb;
+      }
+
+      .invoice-total {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 18px;
+        font-weight: 600;
+        font-size: 16px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #f0f4ff;
+        border: 1px solid #d8e0ff;
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .status {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .status span {
+        font-family: "JetBrains Mono", "Courier New", monospace;
+        font-size: 12px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #f3b02a;
+        box-shadow: 0 0 0 4px rgba(243, 176, 42, 0.2);
+      }
+
+      @media (max-width: 900px) {
+        body {
+          padding: 20px;
+        }
+
+        .app {
+          width: 100%;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .events {
+          max-height: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="header">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h1 class="title">Usage Meter</h1>
+            <div class="subtitle">Stripe Meters + Meter Events • Live usage every 5s</div>
+          </div>
+        </div>
+        <div class="status">
+          <span class="badge" id="userBadge">user: loading</span>
+          <span class="status-dot" id="statusDot"></span>
+          <span id="subscriptionStatus">subscription: pending</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <section class="panel">
+          <h2>Usage Events</h2>
+          <div class="controls">
+            <button class="btn primary" id="startBtn" type="button">Start</button>
+            <button class="btn" id="stopBtn" type="button" disabled>Stop</button>
+          </div>
+          <div class="usage-summary">
+            <div class="summary-card">
+              <div class="summary-label">Current period</div>
+              <div class="summary-value" id="billedCount">0</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Avg cost / event</div>
+              <div class="summary-value" id="avgEventCost">--</div>
+            </div>
+          </div>
+          <div class="chart">
+            <div class="chart-title">Meter events (per minute)</div>
+            <div class="chart-area" id="chartArea">
+              <div class="y-axis" id="yAxis">
+                <span>20</span>
+                <span>15</span>
+                <span>10</span>
+                <span>5</span>
+                <span>0</span>
+              </div>
+              <div class="chart-svg" id="chartSvg"></div>
+            </div>
+            <div class="chart-axis">
+              <span id="chartStart">--:--</span>
+              <span id="chartEnd">--:--</span>
+            </div>
+          </div>
+          <div class="latest-event" id="latestEvent">Waiting for usage…</div>
+        </section>
+
+        <section class="panel">
+          <div class="invoice-header">
+            <h2 class="invoice-title">Monthly Invoice</h2>
+            <span class="invoice-meta" id="invoiceCurrency">--</span>
+          </div>
+          <table class="invoice-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="invoiceLines"></tbody>
+          </table>
+          <div class="invoice-total">
+            <span>Total</span>
+            <span id="invoiceTotal">--</span>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
